@@ -1,0 +1,144 @@
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <vector>
+#include <map>
+#include <string>
+#include <random>
+
+class Animal {
+public:
+    std::string name;
+    std::string species;
+    std::string color;
+    std::string sex;
+    int weight;
+    std::string origin;
+    std::string birthDate;
+    std::string animalID;
+
+    virtual std::string getHabitat() = 0; // Pure virtual function for polymorphism
+};
+
+class Hyena : public Animal {
+public:
+    std::string getHabitat() override {
+        return "Hyena Habitat";
+    }
+};
+
+class Lion : public Animal {
+public:
+    std::string getHabitat() override {
+        return "Lion Habitat";
+    }
+};
+
+class Tiger : public Animal {
+public:
+    std::string getHabitat() override {
+        return "Tiger Habitat";
+    }
+};
+
+class Bear : public Animal {
+public:
+    std::string getHabitat() override {
+        return "Bear Habitat";
+    }
+};
+
+std::string genUniqueID(const std::string& species, int count) {
+    return species.substr(0, 2) + std::to_string(count);
+}
+
+
+std::string genBirthDay(int age, const std::string& season) {
+    int birthYear = 2024 - age;
+    int day = 1 + (rand() % 28);
+
+    std::string month = "06";
+    if (season == "spring") month = "03";
+    else if (season == "summer") month = "06";
+    else if (season == "fall") month = "09";
+    else if (season == "winter") month = "12";
+
+    return std::to_string(birthYear) + "-" + month + "-" + (day < 10 ? "0" : "") + std::to_string(day);
+}
+
+int main() {
+    std::ifstream animalFile("zooarrivingAnimals.txt");
+    std::ifstream nameFile("zooanimalNames.txt");
+    std::ofstream reportFile("zooPopulation.txt");
+
+    if (!animalFile || !nameFile || !reportFile) {
+        std::cerr << "Error opening one or more files!" << std::endl;
+        return 1;
+    }
+
+    std::vector<std::string> animalNames;
+    std::string name;
+    while (getline(nameFile, name)) {
+        animalNames.push_back(name);
+    }
+
+    std::map<std::string, std::vector<Animal*>> habitats;
+    std::string line;
+    int count = 0;
+
+    while (getline(animalFile, line)) {
+        std::istringstream stream(line);
+        std::string ageStr, sex, species, season, color, weightStr, origin;
+        int age, weight;
+
+        stream >> ageStr >> sex >> species >> season >> color >> weightStr;
+        weight = std::stoi(weightStr);
+        std::getline(stream, origin);  // Read the remaining origin part
+
+        age = std::stoi(ageStr);
+
+
+        Animal* animal = nullptr;
+        if (species == "hyena") {
+            animal = new Hyena();
+            animal->species = "Hyena";
+        } else if (species == "lion") {
+            animal = new Lion();
+            animal->species = "Lion";
+        } else if (species == "tiger") {
+            animal = new Tiger();
+            animal->species = "Tiger";
+        } else if (species == "bear") {
+            animal = new Bear();
+            animal->species = "Bear";
+        }
+
+        if (animal) {
+            animal->name = animalNames[count];
+            animal->color = color;
+            animal->sex = sex;
+            animal->weight = weight;
+            animal->origin = origin;
+            animal->birthDate = genBirthDay(age, season);
+            animal->animalID = genUniqueID(species.substr(0, 2), count + 1);
+            habitats[species].push_back(animal);
+        }
+
+        count++;
+    }
+
+
+    for (const auto& habitat : habitats) {
+        reportFile << habitat.second.front()->getHabitat() << ":\n";
+        for (const auto& animal : habitat.second) {
+            reportFile << animal->animalID << "; " << animal->name << "; birth date "
+                << animal->birthDate << "; " << animal->color << " color; " << animal->sex
+                << "; " << animal->weight << " pounds; from " << animal->origin << "\n";
+        }
+        reportFile << "\n";
+    }
+
+    std::cout << "Zoo population report successfully generated!" << std::endl;
+
+    return 0;
+}
